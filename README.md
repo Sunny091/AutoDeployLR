@@ -47,7 +47,7 @@ This project follows the complete CRISP-DM (Cross-Industry Standard Process for 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/linear-regression-visualizer.git
+git clone git@github.com:Sunny091/AutoDeployLR.git
 cd linear-regression-visualizer
 
 # Install dependencies
@@ -245,7 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Chen Zhixuan**
 
--   GitHub: [@yourusername](https://github.com/yourusername)
+-   GitHub: [@Sunny091](https://github.com/Sunny091)
 
 ## 🙏 Acknowledgments
 
