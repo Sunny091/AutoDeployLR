@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Linear Regression Visualizer</title>
+        <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 20px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                overflow: hidden;
+            }
+
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+
+            .header p {
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+
+            .content {
+                display: grid;
+                grid-template-columns: 350px 1fr;
+                gap: 0;
+            }
+
+            .sidebar {
+                background: #f8f9fa;
+                padding: 30px;
+                border-right: 2px solid #e0e0e0;
+            }
+
+            .sidebar h2 {
+                color: #333;
+                margin-bottom: 20px;
+                font-size: 1.5em;
+            }
+
+            .control-group {
+                margin-bottom: 25px;
+            }
+
+            .control-group label {
+                display: block;
+                font-weight: 600;
+                color: #555;
+                margin-bottom: 8px;
+                font-size: 0.95em;
+            }
+
+            .control-group input[type="range"] {
+                width: 100%;
+                height: 6px;
+                background: #ddd;
+                border-radius: 5px;
+                outline: none;
+                -webkit-appearance: none;
+            }
+
+            .control-group input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 18px;
+                height: 18px;
+                background: #667eea;
+                cursor: pointer;
+                border-radius: 50%;
+            }
+
+            .control-group input[type="range"]::-moz-range-thumb {
+                width: 18px;
+                height: 18px;
+                background: #667eea;
+                cursor: pointer;
+                border-radius: 50%;
+                border: none;
+            }
+
+            .control-group input[type="number"] {
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                font-size: 1em;
+            }
+
+            .value-display {
+                display: inline-block;
+                background: #667eea;
+                color: white;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 0.9em;
+                margin-left: 10px;
+            }
+
+            .generate-btn {
+                width: 100%;
+                padding: 15px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 1.1em;
+                font-weight: bold;
+                cursor: pointer;
+                transition: transform 0.2s;
+                margin-top: 10px;
+                display: none; /* 隱藏按鈕，因為會自動更新 */
+            }
+
+            .generate-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            .generate-btn:active {
+                transform: translateY(0);
+            }
+
+            .auto-update-info {
+                background: #e7f3ff;
+                border: 2px solid #2196f3;
+                border-radius: 10px;
+                padding: 12px;
+                margin-top: 15px;
+                text-align: center;
+                color: #0d47a1;
+                font-size: 0.9em;
+            }
+
+            .auto-update-info::before {
+                content: "⚡ ";
+                font-size: 1.2em;
+            }
+
+            .main-content {
+                padding: 30px;
+            }
+
+            #plot {
+                width: 100%;
+                height: 500px;
+                margin-bottom: 30px;
+            }
+
+            .evaluation {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+                margin-top: 30px;
+            }
+
+            .eval-section {
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 15px;
+                border: 2px solid #e0e0e0;
+            }
+
+            .eval-section h3 {
+                color: #333;
+                margin-bottom: 20px;
+                font-size: 1.3em;
+                display: flex;
+                align-items: center;
+            }
+
+            .eval-section h3::before {
+                content: "📊";
+                margin-right: 10px;
+                font-size: 1.2em;
+            }
+
+            .metric {
+                background: white;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 15px;
+                border-left: 4px solid #667eea;
+            }
+
+            .metric-label {
+                font-size: 0.9em;
+                color: #666;
+                margin-bottom: 5px;
+            }
+
+            .metric-value {
+                font-size: 1.5em;
+                font-weight: bold;
+                color: #333;
+            }
+
+            .metric-delta {
+                font-size: 0.85em;
+                color: #888;
+                margin-top: 5px;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            table th {
+                background: #667eea;
+                color: white;
+                padding: 12px;
+                text-align: left;
+                font-weight: 600;
+            }
+
+            table td {
+                padding: 10px 12px;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            table tr:last-child td {
+                border-bottom: none;
+            }
+
+            table tr:hover {
+                background: #f8f9fa;
+            }
+
+            .crisp-dm {
+                background: #fff3cd;
+                border: 2px solid #ffc107;
+                border-radius: 10px;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .crisp-dm h4 {
+                color: #856404;
+                margin-bottom: 10px;
+            }
+
+            .crisp-dm ol {
+                margin-left: 20px;
+                color: #856404;
+                font-size: 0.9em;
+            }
+
+            .crisp-dm li {
+                margin-bottom: 5px;
+            }
+
+            .loading {
+                display: none;
+                text-align: center;
+                padding: 20px;
+                color: #667eea;
+                font-size: 1.2em;
+            }
+
+            .loading.active {
+                display: block;
+            }
+
+            .footer {
+                background: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                color: #666;
+                border-top: 2px solid #e0e0e0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📈 Interactive Linear Regression Visualizer</h1>
+                <p>Demonstrating Linear Regression with CRISP-DM Methodology</p>
+            </div>
+
+            <div class="content">
+                <div class="sidebar">
+                    <div class="crisp-dm">
+                        <h4>🔄 CRISP-DM Methodology</h4>
+                        <ol>
+                            <li>Business Understanding</li>
+                            <li>Data Understanding</li>
+                            <li>Data Preparation</li>
+                            <li>Modeling</li>
+                            <li>Evaluation</li>
+                            <li>Deployment</li>
+                        </ol>
+                    </div>
+
+                    <h2>⚙️ Parameters</h2>
+
+                    <div class="control-group">
+                        <label>
+                            Number of Data Points (n)
+                            <span class="value-display" id="n-value">100</span>
+                        </label>
+                        <input
+                            type="range"
+                            id="n-points"
+                            min="20"
+                            max="500"
+                            step="10"
+                            value="100"
+                        />
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            Coefficient a (y = ax + b + noise)
+                            <span class="value-display" id="a-value">2.0</span>
+                        </label>
+                        <input
+                            type="range"
+                            id="coefficient-a"
+                            min="-5"
+                            max="5"
+                            step="0.1"
+                            value="2.0"
+                        />
+                    </div>
+
+                    <div class="control-group">
+                        <label>
+                            Noise Variance
+                            <span class="value-display" id="noise-value"
+                                >1.0</span
+                            >
+                        </label>
+                        <input
+                            type="range"
+                            id="noise-variance"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            value="1.0"
+                        />
+                    </div>
+
+                    <div class="control-group">
+                        <label>Random Seed</label>
+                        <input
+                            type="number"
+                            id="random-seed"
+                            min="0"
+                            max="1000"
+                            value="42"
+                        />
+                    </div>
+
+                    <button class="generate-btn" onclick="generateData()">
+                        🔄 Generate & Visualize
+                    </button>
+
+                    <div class="auto-update-info">Auto-update enabled</div>
+                </div>
+
+                <div class="main-content">
+                    <h2>📊 Visualization</h2>
+                    <div id="plot"></div>
+                    <div class="loading" id="loading">Loading...</div>
+
+                    <div class="evaluation">
+                        <div class="eval-section">
+                            <h3>Model Coefficients</h3>
+                            <div class="metric">
+                                <div class="metric-label">Coefficient (a)</div>
+                                <div class="metric-value" id="coef-a">-</div>
+                                <div class="metric-delta" id="coef-a-delta">
+                                    -
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Intercept (b)</div>
+                                <div class="metric-value" id="coef-b">-</div>
+                                <div class="metric-delta">Target: 5.0000</div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">R² Score</div>
+                                <div class="metric-value" id="r-squared">-</div>
+                                <div class="metric-delta">
+                                    1.0 is perfect fit
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="eval-section">
+                            <h3>Top 5 Outliers</h3>
+                            <table id="outliers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Point</th>
+                                        <th>X</th>
+                                        <th>Y (Actual)</th>
+                                        <th>Y (Pred)</th>
+                                        <th>Residual</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="outliers-body">
+                                    <tr>
+                                        <td
+                                            colspan="5"
+                                            style="text-align: center"
+                                        >
+                                            Generate data to see outliers
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>
+                    Built with ❤️ using Flask & Plotly | Following CRISP-DM
+                    Methodology
+                </p>
+                <p style="margin-top: 10px; font-size: 0.9em">
+                    <strong>Formula:</strong> y = ax + b + noise |
+                    <strong>b (intercept)</strong> = 5.0
+                </p>
+            </div>
+        </div>
+
+        <script>
+            // Debounce function to avoid too frequent updates
+            let debounceTimer;
+            function debounce(func, delay) {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(func, delay);
+            }
+
+            // Update slider value displays and trigger auto-update
+            document
+                .getElementById("n-points")
+                .addEventListener("input", function (e) {
+                    document.getElementById("n-value").textContent =
+                        e.target.value;
+                    debounce(generateData, 500); // 自動更新，延遲500ms
+                });
+
+            document
+                .getElementById("coefficient-a")
+                .addEventListener("input", function (e) {
+                    document.getElementById("a-value").textContent = parseFloat(
+                        e.target.value
+                    ).toFixed(1);
+                    debounce(generateData, 500); // 自動更新，延遲500ms
+                });
+
+            document
+                .getElementById("noise-variance")
+                .addEventListener("input", function (e) {
+                    document.getElementById("noise-value").textContent =
+                        parseFloat(e.target.value).toFixed(1);
+                    debounce(generateData, 500); // 自動更新，延遲500ms
+                });
+
+            // Auto-update for random seed input
+            document
+                .getElementById("random-seed")
+                .addEventListener("change", function (e) {
+                    generateData(); // 立即更新
+                });
+
+            // Generate data and update visualization
+            async function generateData() {
+                const loading = document.getElementById("loading");
+                loading.classList.add("active");
+
+                const params = {
+                    n_points: parseInt(
+                        document.getElementById("n-points").value
+                    ),
+                    coefficient_a: parseFloat(
+                        document.getElementById("coefficient-a").value
+                    ),
+                    noise_variance: parseFloat(
+                        document.getElementById("noise-variance").value
+                    ),
+                    random_seed: parseInt(
+                        document.getElementById("random-seed").value
+                    ),
+                };
+
+                try {
+                    const response = await fetch("/generate", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(params),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Failed to generate data");
+                    }
+
+                    const data = await response.json();
+
+                    // Update plot
+                    updatePlot(data.plot_data);
+
+                    // Update coefficients
+                    updateCoefficients(
+                        data.coefficients,
+                        data.target_coefficient
+                    );
+
+                    // Update outliers table
+                    updateOutliersTable(data.outliers);
+                } catch (error) {
+                    alert("Error: " + error.message);
+                } finally {
+                    loading.classList.remove("active");
+                }
+            }
+
+            function updatePlot(plotData) {
+                const normalMask = plotData.x.map(
+                    (_, i) => !plotData.outlier_indices.includes(i)
+                );
+
+                const normalX = plotData.x.filter((_, i) => normalMask[i]);
+                const normalY = plotData.y.filter((_, i) => normalMask[i]);
+
+                const outlierX = plotData.outlier_indices.map(
+                    (i) => plotData.x[i]
+                );
+                const outlierY = plotData.outlier_indices.map(
+                    (i) => plotData.y[i]
+                );
+
+                const traces = [
+                    {
+                        x: normalX,
+                        y: normalY,
+                        mode: "markers",
+                        type: "scatter",
+                        name: "Data Points",
+                        marker: {
+                            size: 8,
+                            color: "blue",
+                            opacity: 0.6,
+                        },
+                    },
+                    {
+                        x: outlierX,
+                        y: outlierY,
+                        mode: "markers",
+                        type: "scatter",
+                        name: "Outliers (Top 5)",
+                        marker: {
+                            size: 12,
+                            color: "red",
+                            symbol: "diamond",
+                        },
+                    },
+                    {
+                        x: plotData.x_line,
+                        y: plotData.y_line,
+                        mode: "lines",
+                        type: "scatter",
+                        name: "Regression Line",
+                        line: {
+                            color: "green",
+                            width: 3,
+                        },
+                    },
+                ];
+
+                const layout = {
+                    title: "Linear Regression: Data Points vs Fitted Line",
+                    xaxis: { title: "X" },
+                    yaxis: { title: "Y" },
+                    hovermode: "closest",
+                    showlegend: true,
+                };
+
+                Plotly.newPlot("plot", traces, layout, { responsive: true });
+            }
+
+            function updateCoefficients(coefficients, targetCoef) {
+                document.getElementById("coef-a").textContent =
+                    coefficients.coefficient_a.toFixed(4);
+                document.getElementById(
+                    "coef-a-delta"
+                ).textContent = `Target: ${targetCoef.toFixed(4)}`;
+                document.getElementById("coef-b").textContent =
+                    coefficients.intercept_b.toFixed(4);
+                document.getElementById("r-squared").textContent =
+                    coefficients.r_squared.toFixed(4);
+            }
+
+            function updateOutliersTable(outliers) {
+                const tbody = document.getElementById("outliers-body");
+                tbody.innerHTML = "";
+
+                outliers.forEach((outlier) => {
+                    const row = tbody.insertRow();
+                    row.insertCell(0).textContent = outlier.Point;
+                    row.insertCell(1).textContent = outlier.X.toFixed(3);
+                    row.insertCell(2).textContent =
+                        outlier["Y (Actual)"].toFixed(3);
+                    row.insertCell(3).textContent =
+                        outlier["Y (Predicted)"].toFixed(3);
+                    row.insertCell(4).textContent = outlier.Residual.toFixed(3);
+                });
+            }
+
+            // Generate initial data on page load
+            window.addEventListener("load", generateData);
+        </script>
+    </body>
+</html>
